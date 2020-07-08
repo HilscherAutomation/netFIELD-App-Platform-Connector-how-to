@@ -1,1 +1,581 @@
 # netFIELD-proxy-how-to
+
+# netFIELD Proxy
+
+The netFIELD Proxy is your datas entrance to the cloud. Manage which data is published to the cloud, subscribe to MQTT topics and update your device firmware.
+
+## Before you start
+Before you start, make sure you have the following things:
+- An onboarded, netfield ready device
+- A user account with sufficient privileges to deploy containers to a device
+
+## Installation
+- If you haven't already, deploy a MQTT broker to your device. The netfield instance comes with a mosquitto container ready to deploy. If you want to deploy a different broker, create your own container with the appropriate docker image. The broker can be configured via environment variables or the container create options. Read the brokers documentation for how to set it up properly
+
+- Deploy the netFIELD Proxy container. 
+    - Navigate to your device in your netFIELD instance, click on "containers" and select `netFIELD Proxy` from the `Available Containers` tab.
+    - The netFIELD Proxy uses a system-wide configuration file for its MQTT settings. If you wish to connect to a different broker you can change these settings after deployment.
+    - Click `Deploy` and allow the device a few minutes to download and install the container. You can check in on the status on the `Installed Containers` tab on your devices details page.
+
+
+## Updating Firmware
+
+The netFIELD Proxy allows you to update your devices operating system. Update images are provided by the netFIELD team and are ready for installation from within the netFIELD Portal.
+
+- Navigate to your devies details Page
+- Select `netFIELD Proxy` from the `Device Navigation` sidebar
+- From the `Edge sOS` tab, click on the version you want to deploy and confirm the action by clicking on `Deploy`
+- Your device will send periodical progress reports, while it updates its firmware
+
+## Managing MQTT subscriptions
+
+Once netFIELD Proxy is deployed, you can manage which topics it subsribes to. Data published to one of those topics are automatically send to the cloud via the netFIELD Proxy. 
+
+### Add a new subscription:
+- Navigate to your devices details page, select `netFIELD Proxy` from the `Device Navigation` sidebar and click on the `Topics` tab.
+- Click `Add` 
+- Chose a topic name you want to subscribe to
+- Select the appropriate Quality of Service Level from the dropdown menu
+- Click `Save`
+
+### Managing Topic Subscriptions
+You can change or delete subscriptions by clicking on the corresponding button next to the topics name.
+
+### Viewing Topic Data
+After subscribing to a topic, it is possible to view the latest message by simply clicking on a topic. Alternatively, you can use the button next to the topic.
+
+## Sending Messages To The Device Broker
+It is also possible, to publish arbitrary data from the cloud onto a devices broker.
+- Navigate to your devices details page, select `netFIELD Proxy` from the `Device Navigation` sidebar and click on the `Cloud To Device` tab
+- Chose a topic name and a Quality of Service level
+- Add the data you want to publish
+- Click `Send`
+
+The netFIELD Proxy will receive your message and publish it to the broker
+
+## Using The Built In REST API
+Every container of the netFIELD Proxy comes with a REST API. The functionality described above is accessible via this API as well. For ease of use and for documentation purposes a swagger client is provided. Simply point your browser to the the port defined in the `Container Create Options` (default is 5001) to access it.
+Other containers deployed to your device can also access this API.
+
+# Code Examples
+
+In order to receive data published by the netFIELD Proxy you can connect to the websocket server in the cloud. This allows any program to access published data remotely without the need to connect to a device directly.
+
+The netFIELD Proxy automatically chunks messages larger than 1MB. If messages are below that threshold, there are sent as is. The examples below are simply ones, no de-chunking mechanism is implementd. For a more detailed exmaple, see: URL
+
+## C# Example
+
+```C#
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
+// external dependencies
+// Json.NET: https://www.newtonsoft.com/json
+using Newtonsoft.Json;
+// websocket-sharp: http://sta.github.io/websocket-sharp/
+using WebSocketSharp;
+
+namespace netFIELD_Portal_Web_UI.Helpers.WebSocketsClient
+{
+    /// <summary>
+    /// WebSocket client to communicate with the netFIELD Proxy WebSocket.
+    /// </summary>
+    public class NetfieldProxyWebsocketClient
+    {
+        private WebSocket ws;
+        private string endpoint;
+        private string authorization;
+        private string clientId;
+
+        /// <summary>
+        /// Create a NetfieldProxyWebsocketClient instance.
+        /// </summary>
+        /// <param name="endpoint">WebSocket endpoint, e.g. wss://api.netfield.io/v1</param>
+        /// <param name="authorization">Access token or API key.</param>
+        /// <param name="pubMessageHandler">Handler to be called on receiving an update message on the WebSocket.</param>
+        /// <param name="onErrorHandler">Handler to be called on errors.</param>
+        /// <param name="onCloseHandler">Handler to be called on closing the connection.</param>
+        /// <param name="unexpectedMessageHandler">Handler to be called on receiving an unexpected message.</param>
+        public NetfieldProxyWebsocketClient(string endpoint, string authorization, Action<NesMessage> pubMessageHandler, Action<string> onErrorHandler, Action<string> onCloseHandler, Action<string> unexpectedMessageHandler)
+        {
+            this.endpoint = endpoint;
+            this.authorization = authorization;
+            this.clientId = Guid.NewGuid().ToString(); // generate a unique client id
+
+            this.ws = new WebSocket(this.endpoint);
+
+            this.ws.OnError += (sender, e) =>
+            {
+                onErrorHandler(e.Message);
+            };
+
+            this.ws.OnClose += (sender, e) =>
+            {
+                onCloseHandler(e.Reason);
+            };
+
+            this.ws.OnOpen += (sender, e) =>
+            {
+                this._sayHello();
+            };
+
+            this.ws.OnMessage += (sender, e) =>
+            {
+                string msg = e.Data;
+                try
+                {
+                    // deserialize JSON message
+                    NesMessage msgObj = JsonConvert.DeserializeObject<NesMessage>(msg);
+                    switch (msgObj.type)
+                    {
+                        case "hello":
+                            // got a 'hello' response after successfully authenticating, do nothing
+                            break;
+                        case "sub":
+                            // got a 'sub' response after successfully subscribing to a topic, do nothing
+                            break;
+                        case "ping":
+                            this._respondToHeartbeatPing();
+                            break;
+                        case "pub":
+                            pubMessageHandler(msgObj);
+                            break;
+                        default:
+                            // Got a message which was neither a 'hello', 'ping', 'sub' or 'pub' message;
+                            unexpectedMessageHandler(msg);
+                            break;
+                    }
+                }
+                catch
+                {
+                    onErrorHandler(msg);
+                }
+            };
+        }
+
+        /// <summary>
+        /// Send a string message.
+        /// </summary>
+        /// <param name="data">string to send.</param>
+        public void Send(string data)
+        {
+            this.ws.Send(data);
+        }
+
+        /// <summary>
+        /// Send a message by passing in an object which will be serialized before sending.
+        /// </summary>
+        /// <param name="data">data object to send.</param>
+        public void SendObject(object data)
+        {
+            this.Send(JsonConvert.SerializeObject(data));
+        }
+
+        /// <summary>
+        /// Subscribe to netFIELD proxy messages for the given device on the given topic.
+        /// </summary>
+        /// <param name="deviceId">deviceId of the device running netFIELD Proxy.</param>
+        /// <param name="topic">topic to subscribe to. This is the plaintext topic, it will automatically be converted to a base64 string.</param>
+        public void SubscribeToTopic(string deviceId, string topic)
+        {
+            var topicAsBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(topic));
+            var subscribePayload = new
+            {
+                id = this.clientId,
+                path = $"/devices/{deviceId}/netfieldproxy/{topicAsBase64}",
+                type = "sub"
+            };
+            this.SendObject(subscribePayload);
+        }
+
+        /// <summary>
+        /// Connect to the WebSocket and authenticate.
+        /// </summary>
+        public void Connect()
+        {
+            this.ws.Connect();
+        }
+
+        /// <summary>
+        /// Keep the connection to the WebSocket open for the configured time span and close it afterwards.
+        /// </summary>
+        /// <param name="timeSpanToKeepConnectionOpenFor">time span to keep the connection open.</param>
+        public async Task KeepConnectionOpen(TimeSpan timeSpanToKeepConnectionOpenFor)
+        {
+            await Task.Delay(timeSpanToKeepConnectionOpenFor);
+            Close();
+        }
+
+        /// <summary>
+        /// Close the connection to the WebSocket.
+        /// </summary>
+        public void Close()
+        {
+            this.ws.Close();
+        }
+
+        /// <summary>
+        /// Send a 'hello' message according the nes protocol which authenticates this client.
+        /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md#Hello
+        /// </summary>
+        private void _sayHello()
+        {
+            var helloPayload = new
+            {
+                type = "hello",
+                id = this.clientId,
+                version = "2",
+                auth = new
+                {
+                    headers = new
+                    {
+                        authorization = this.authorization,
+                    },
+                },
+            };
+            this.SendObject(helloPayload);
+        }
+
+        /// <summary>
+        /// Send a heartbeat keep-alive ping response according to the nes protocol.
+        /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md#Heartbeat
+        /// </summary>
+        private void _respondToHeartbeatPing()
+        {
+            var pingResponse = new
+            {
+                type = "ping",
+                id = this.clientId,
+            };
+            this.SendObject(pingResponse);
+        }
+    }
+
+    /// <summary>
+    /// Represents message received on the WebSocket according to the nes protocol.
+    /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md
+    /// </summary>
+    public class NesMessage
+    {
+        [JsonProperty("type")]
+        public string type { get; set; }
+
+        [JsonProperty("message")]
+        public NetfieldProxyUpdateMessage message { get; set; }
+    }
+
+    /// <summary>
+    /// Represents netFIELD Proxy update message received on the WebSocket.
+    /// 
+    /// Example:
+    /// {
+    ///   "createdAt":1569424627376,
+    ///   "topic":"/fromDeviceToCloud",
+    ///   "data":"payload, cnt 14"
+    /// }
+    /// </summary>
+    public class NetfieldProxyUpdateMessage
+    {
+        [JsonProperty("createdAt")]
+        public long createdAt { get; set; }
+
+        [JsonProperty("topic")]
+        public string topic { get; set; }
+
+        [JsonProperty("data")]
+        public string data { get; set; }
+    }
+}
+```
+
+## Javascript Example
+
+```Javascript
+/* Polyfill Websocket and btoa */
+if (typeof WebSocket !== 'function') {
+  // WebSocket is not globally defined, probably running in node.js
+  var WebSocket = require('ws');
+}
+if (typeof btoa !== 'function') {
+  // btoa is not globally defined, probably running in node.js
+  var btoa = require('btoa');
+}
+
+
+/**
+ * WebSocket client to communicate with the netFIELD Proxy WebSocket.
+ *
+ * @class NetFieldProxyWebSocketClient
+ */
+class NetFieldProxyWebSocketClient {
+  /**
+   *Creates an instance of NetFieldProxyWebSocketClient.
+   * @param {string} endpoint - WebSocket endpoint, e.g. wss://api.netfield.io/v1
+   * @param {string} authorization - Access token or API key.
+   * @param {string} deviceId - deviceId of the device running netFIELD Proxy.
+   * @param {string} topic -
+   *   topic to subscribe to (plaintext, converted to base64 automatically)
+   * @param {Object} [handlers] - handlers for events and messages
+   * @param {function} [handlers.pubMessageHandler=console.log] -
+   *   Handler to be called on receiving a netFIELD Proxy update message on the WebSocket.
+   * @param {function} [handlers.errorHandler=console.error] -
+   *   Handler to be called on errors.
+   * @param {function} [handlers.closeHandler=console.log] -
+   *   Handler to be called on closing the connection.
+   * @param {function} [handlers.unexpectedMessageHandler=console.warn] -
+   *   Handler to be called on receiving an unexpected message.
+   */
+  constructor(
+    endpoint,
+    authorization,
+    deviceId,
+    topic,
+    {
+      pubMessageHandler = console.log,
+      errorHandler = console.error,
+      closeHandler = console.log,
+      unexpectedMessageHandler = console.warn,
+    },
+  ) {
+    this.endpoint = endpoint;
+    // generate a clientId
+    this.clientId = (Math.random() + 1).toString(36).substring(7);
+    this.deviceId = deviceId;
+    this.topic = topic;
+    this.authorization = authorization;
+    this.pubMessageHandler = pubMessageHandler;
+    this.errorHandler = errorHandler;
+    this.closeHandler = closeHandler;
+    this.unexpectedMessageHandler = unexpectedMessageHandler;
+    this.wsClient = this._initializeWebSocketClient();
+
+    this.subscribeToTopic = this.subscribeToTopic.bind(this);
+    this.send = this.send.bind(this);
+    this.sendObject = this.sendObject.bind(this);
+    this.close = this.close.bind(this);
+  }
+
+  /**
+   * Initialize the WebSocket client.
+   *
+   * @access private
+   *
+   * @returns { WebSocket } WebSocket client.
+   */
+  _initializeWebSocketClient() {
+    const client = new WebSocket(this.endpoint);
+    client.onmessage = this._messageHandler.bind(this);
+    client.onerror = this.errorHandler;
+    client.onclose = this.closeHandler;
+    client.onopen = this._sayHello.bind(this);
+    return client;
+  }
+
+  /**
+   * Handler to be invoked on receiving a message on the WebSocket.
+   *
+   * @param { WebSocket.MessageEvent } event - WebSocket message event.
+   * @param { WebSocket.Data } event.data - WebSocket message data.
+   *
+   * @access private
+   */
+  _messageHandler({ data }) {
+    try {
+      const dataObj = JSON.parse(data);
+      const { type, message, payload } = dataObj;
+      if (payload && payload.error) {
+        this.errorHandler(data);
+        return;
+      }
+      switch (type) {
+        case 'hello':
+          // got a 'hello' response after successfully authenticating, subscribing
+          this.subscribeToTopic(this.deviceId, this.topic);
+          break;
+        case 'sub':
+          // got a 'sub' response after successfully subscribing
+          // -> do nothing and wait for 'pub' messages
+          break;
+        case 'ping':
+          // got a keep-alive 'ping' heartbeat from the server
+          this._respondToHeartbeatPing();
+          break;
+        case 'pub':
+          // got a 'pub' message from the server
+          this.pubMessageHandler(message);
+          break;
+        default:
+          this.unexpectedMessageHandler(data);
+          break;
+      }
+    } catch (error) {
+      this.errorHandler(error);
+    }
+  }
+
+  /**
+   * Subscribe to netFIELD proxy messages for the given device on the given topic.
+   *
+   * @param {string} deviceId - deviceId of the device running netFIELD Proxy.
+   * @param {string} topic - topic to subscribe to (plaintext, converted to base64 automatically)
+   */
+  subscribeToTopic(deviceId, topic) {
+    const topicAsBase64 = btoa(topic);
+    const subscribePayload = {
+      id: this.clientId,
+      path: `/devices/${deviceId}/netfieldproxy/${topicAsBase64}`,
+      type: 'sub',
+    };
+    this.sendObject(subscribePayload);
+  }
+
+  /**
+   * Send a string message.
+   *
+   * @param {string} dataString - string to send.
+   */
+  send(dataString) {
+    const { wsClient } = this;
+    if (wsClient && wsClient.readyState === wsClient.OPEN) {
+      wsClient.send(dataString);
+    }
+  }
+
+  /**
+   * Send a message by passing in an object which will be serialized before sending.
+   *
+   * @param {Object} dataObj - data object to send.
+   */
+  sendObject(dataObj) {
+    this.send(JSON.stringify(dataObj));
+  }
+
+  /**
+   * Close the connection to the WebSocket.
+   *
+   * @param {number} [code]
+   * @param {string} [data]
+   */
+  close(code, data) {
+    const { wsClient } = this;
+    if (wsClient && wsClient.readyState === wsClient.OPEN) {
+      wsClient.close(code, data);
+    }
+  }
+
+  /**
+   * Send a 'hello' message according the nes protocol which authenticates this client.
+   *
+   * https://github.com/hapijs/nes/blob/master/PROTOCOL.md#Hello
+   *
+   * @access private
+   */
+  _sayHello() {
+    const helloPayload = {
+      type: 'hello',
+      auth: {
+        headers: {
+          authorization: this.authorization,
+        },
+      },
+      id: this.clientId,
+      version: '2',
+    };
+    this.sendObject(helloPayload);
+  }
+
+  /**
+   * Send a heartbeat keep-alive ping response according to the nes protocol.
+   *
+   * https://github.com/hapijs/nes/blob/master/PROTOCOL.md#Heartbeat
+   *
+   * @access private
+   */
+  _respondToHeartbeatPing() {
+    const pingResponsePayload = {
+      id: this.clientId,
+      type: 'ping',
+    };
+    this.sendObject(pingResponsePayload);
+  }
+}
+
+// usage example
+
+/**
+ * Handler to be called on receiving a netFIELD Proxy update message on the WebSocket.
+ *
+ * @param {Object} netFieldProxyMessage - netFIELD Proxy update message object
+ * @param {number} netFieldProxyMessage.createdAt - unix timestamp in milliseconds
+ * @param {string} netFieldProxyMessage.topic - topic (plain text, not base64-encoded)
+ * @param {string} netFieldProxyMessage.data - the message content
+ */
+const myPubMessageHandler = (netFieldProxyMessage) => {
+  // do something with the received message
+  console.log('Received a netFIELD proxy message:', netFieldProxyMessage);
+};
+
+/**
+ * Handler called on errors.
+ *
+ * Error causes:
+ * * WebSocket connection errors.
+ * * Error parsing a received message.
+ * * Invalid credentials.
+ *
+ * @param {*} error
+ */
+const myErrorHandler = (error) => {
+  // do something on receiving an error
+  console.error('An error occured:', error);
+};
+
+/**
+ * Handler to be called on receiving an unexpected message.
+ *
+ * @param {string} message
+ */
+const myUnexpectedMessageHandler = (message) => {
+  // do something on receiving an unexpected message
+  console.warn('Received an unexpected message:', message);
+};
+
+/**
+ * Handler to be called on closing the connection.
+ *
+ * @param {WebSocket.CloseEvent} event
+ */
+const myCloseHandler = (event) => {
+  console.log('Connection to WebSocket closed:', event);
+};
+
+const handlers = {
+  pubMessageHandler: myPubMessageHandler,
+  errorHandler: myErrorHandler,
+  unexpectedMessageHandler: myUnexpectedMessageHandler,
+  closeHandler: myCloseHandler,
+};
+
+const endpoint = 'wss://api.netfield.io';
+const deviceId = '{deviceId}';
+const topic = '{topic}';
+const authorization = '{authorization}'; // API Key or User Token with viewDeviceDetails permission 
+
+console.log(
+  `Initializing connection to WebSocket at ${endpoint} and subscribing to topic ${topic} on device ${deviceId} ...`,
+);
+
+const client = new NetFieldProxyWebSocketClient(
+  endpoint,
+  authorization,
+  deviceId,
+  topic,
+  handlers,
+);
+
+const keepConnectionOpenForSeconds = 60;
+console.log(`Connection initialized, keeping open for ${keepConnectionOpenForSeconds} s ...`);
+setTimeout(client.close, keepConnectionOpenForSeconds * 1000);
+
+```
