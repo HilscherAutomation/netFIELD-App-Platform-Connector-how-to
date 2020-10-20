@@ -20,9 +20,9 @@ Before you start, make sure you have the following things:
 
 ## Updating Firmware
 
-The netFIELD App Platform Connector allows you to update your devices operating system. Update images are provided by the netFIELD team and are ready for installation from within the netFIELD Portal.
+The netFIELD App Platform Connector provides the functionality for you to update your devices operating system. Update images are provided by the netFIELD team and are ready for installation from within the netFIELD Portal.
 
-- Navigate to your devies details Page
+- Navigate to your device details Page
 - Select `netFIELD App Platform Connector` from the `Device Navigation` sidebar
 - From the `Edge OS` tab, click on the version you want to deploy and confirm the action by clicking on `Deploy`
 - Your device will send periodical progress reports, while it updates its firmware
