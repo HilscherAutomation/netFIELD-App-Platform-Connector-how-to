@@ -13,7 +13,7 @@ Before you start, make sure you have the following things:
 - If you haven't already, deploy a MQTT broker to your device. The netfield instance comes with a mosquitto container ready to deploy. If you want to deploy a different broker, create your own container with the appropriate docker image. The broker can be configured via environment variables or the container create options. Read the brokers documentation for how to set it up properly
 
 - Deploy the netFIELD App Platform Connector container. 
-    - Navigate to your device in your netFIELD instance, click on "containers" and select `netFIELD App Platform Connector` from the `Available Containers` tab.
+    - Navigate to your device in your netFIELD instance, click on "containers" and select `netFIELD App Platform Connector` from the `Available Containers` tab.
     - The netFIELD App Platform Connector uses a system-wide configuration file for its MQTT settings. If you wish to connect to a different broker you can change these settings after deployment.
     - Click `Deploy` and allow the device a few minutes to download and install the container. You can check in on the status on the `Installed Containers` tab on your devices details page.
 
