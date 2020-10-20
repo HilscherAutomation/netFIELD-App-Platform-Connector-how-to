@@ -2,7 +2,7 @@
 
 # netFIELD App Platform Connector
 
-The netFIELD Proxy is your datas entrance to the cloud. Manage which data is published to the cloud, subscribe to MQTT topics and update your device firmware.
+The netFIELD App Platform Connector is your datas entrance to the cloud. Manage which data is published to the cloud, subscribe to MQTT topics and update your device firmware.
 
 ## Before you start
 Before you start, make sure you have the following things:
@@ -12,27 +12,27 @@ Before you start, make sure you have the following things:
 ## Installation
 - If you haven't already, deploy a MQTT broker to your device. The netfield instance comes with a mosquitto container ready to deploy. If you want to deploy a different broker, create your own container with the appropriate docker image. The broker can be configured via environment variables or the container create options. Read the brokers documentation for how to set it up properly
 
-- Deploy the netFIELD Proxy container. 
-    - Navigate to your device in your netFIELD instance, click on "containers" and select `netFIELD Proxy` from the `Available Containers` tab.
-    - The netFIELD Proxy uses a system-wide configuration file for its MQTT settings. If you wish to connect to a different broker you can change these settings after deployment.
+- Deploy the netFIELD App Platform Connector container. 
+    - Navigate to your device in your netFIELD instance, click on "containers" and select `netFIELD App Platform Connector` from the `Available Containers` tab.
+    - The netFIELD App Platform Connector uses a system-wide configuration file for its MQTT settings. If you wish to connect to a different broker you can change these settings after deployment.
     - Click `Deploy` and allow the device a few minutes to download and install the container. You can check in on the status on the `Installed Containers` tab on your devices details page.
 
 
 ## Updating Firmware
 
-The netFIELD Proxy allows you to update your devices operating system. Update images are provided by the netFIELD team and are ready for installation from within the netFIELD Portal.
+The netFIELD App Platform Connector allows you to update your devices operating system. Update images are provided by the netFIELD team and are ready for installation from within the netFIELD Portal.
 
 - Navigate to your devies details Page
-- Select `netFIELD Proxy` from the `Device Navigation` sidebar
-- From the `Edge sOS` tab, click on the version you want to deploy and confirm the action by clicking on `Deploy`
+- Select `netFIELD App Platform Connector` from the `Device Navigation` sidebar
+- From the `Edge OS` tab, click on the version you want to deploy and confirm the action by clicking on `Deploy`
 - Your device will send periodical progress reports, while it updates its firmware
 
 ## Managing MQTT subscriptions
 
-Once netFIELD Proxy is deployed, you can manage which topics it subsribes to. Data published to one of those topics are automatically send to the cloud via the netFIELD Proxy. 
+Once netFIELD App Platform Connector is deployed, you can manage which topics it subsribes to. Data published to one of those topics are automatically send to the cloud via the netFIELD App Platform Connector. 
 
 ### Add a new subscription:
-- Navigate to your devices details page, select `netFIELD Proxy` from the `Device Navigation` sidebar and click on the `Topics` tab.
+- Navigate to your devices details page, select `netFIELD App Platform Connector` from the `Device Navigation` sidebar and click on the `Topics` tab.
 - Click `Add` 
 - Chose a topic name you want to subscribe to
 - Select the appropriate Quality of Service Level from the dropdown menu
@@ -46,22 +46,22 @@ After subscribing to a topic, it is possible to view the latest message by simpl
 
 ## Sending Messages To The Device Broker
 It is also possible, to publish arbitrary data from the cloud onto a devices broker.
-- Navigate to your devices details page, select `netFIELD Proxy` from the `Device Navigation` sidebar and click on the `Cloud To Device` tab
+- Navigate to your devices details page, select `netFIELD App Platform Connector` from the `Device Navigation` sidebar and click on the `Cloud To Device` tab
 - Chose a topic name and a Quality of Service level
 - Add the data you want to publish
 - Click `Send`
 
-The netFIELD Proxy will receive your message and publish it to the broker
+The netFIELD App Platform Connector will receive your message and publish it to the broker
 
 ## Using The Built In REST API
-Every container of the netFIELD Proxy comes with a REST API. The functionality described above is accessible via this API as well. For ease of use and for documentation purposes a swagger client is provided. Simply point your browser to the the port defined in the `Container Create Options` (default is 5001) to access it.
+Every container of the netFIELD App Platform Connector comes with a REST API. The functionality described above is accessible via this API as well. For ease of use and for documentation purposes a swagger client is provided. Simply point your browser to the the port defined in the `Container Create Options` (default is 5001) to access it.
 Other containers deployed to your device can also access this API.
 
 # Code Examples
 
-In order to receive data published by the netFIELD Proxy you can connect to the websocket server in the cloud. This allows any program to access published data remotely without the need to connect to a device directly.
+In order to receive data published by the netFIELD App Platform Connector you can connect to the websocket server in the cloud. This allows any program to access published data remotely without the need to connect to a device directly.
 
-The netFIELD Proxy automatically chunks messages larger than 1MB. If messages are below that threshold, there are sent as is. The examples below are simply ones, no de-chunking mechanism is implementd. For a more detailed exmaple, see: URL
+The netFIELD App Platform Connector automatically chunks messages larger than 1MB. If messages are below that threshold, there are sent as is. The examples below are simply ones, no de-chunking mechanism is implementd. For a more detailed exmaple, see: URL
 
 ## C# Example
 
