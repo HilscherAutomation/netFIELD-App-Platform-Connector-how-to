@@ -1,6 +1,6 @@
-# netFIELD-proxy-how-to
+# netFIELD App Platform Connector how-to
 
-# netFIELD Proxy
+# netFIELD App Platform Connector
 
 The netFIELD Proxy is your datas entrance to the cloud. Manage which data is published to the cloud, subscribe to MQTT topics and update your device firmware.
 
