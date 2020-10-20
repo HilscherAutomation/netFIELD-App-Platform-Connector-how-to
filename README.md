@@ -6,7 +6,7 @@ The netFIELD App Platform Connector is your datas entrance to the cloud. Manage 
 
 ## Before you start
 Before you start, make sure you have the following things:
-- An onboarded, netfield ready device
+- An onboarded, netFIELD ready device
 - A user account with sufficient privileges to deploy containers to a device
 
 ## Installation
