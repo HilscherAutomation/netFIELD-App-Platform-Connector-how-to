@@ -67,225 +67,205 @@ The netFIELD App Platform Connector automatically chunks messages larger than 1M
 
 ```C#
 using System;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Reactive.Concurrency;
+using System.Reactive.Linq;
 
 // external dependencies
 // Json.NET: https://www.newtonsoft.com/json
 using Newtonsoft.Json;
-// websocket-sharp: http://sta.github.io/websocket-sharp/
-using WebSocketSharp;
+// https://github.com/Marfusios/websocket-client
+using Websocket.Client;
 
 namespace netFIELD_Portal_Web_UI.Helpers.WebSocketsClient
 {
+  /// <summary>
+  /// WebSocket client to communicate with the netFIELD Platform Connector WebSocket.
+  /// </summary>
+  public class NetFIELDPlatformConnectorWebsocketClient
+  {
+    private WebsocketClient client;
+    private Uri endpoint;
+    private string authorization;
+    private string clientId;
+
     /// <summary>
-    /// WebSocket client to communicate with the netFIELD Proxy WebSocket.
+    /// Create a NetFIELDPlatformConnectorWebsocketClient instance.
     /// </summary>
-    public class NetfieldProxyWebsocketClient
+    /// <param name="endpoint">WebSocket endpoint, e.g. wss://api.netfield.io/v1</param>
+    /// <param name="authorization">Access token or API key.</param>
+    /// <param name="pubMessageHandler">Handler to be called on receiving an update message on the WebSocket.</param>
+    /// <param name="onErrorHandler">Handler to be called on errors.</param>
+    /// <param name="onCloseHandler">Handler to be called on closing the connection.</param>
+    /// <param name="unexpectedMessageHandler">Handler to be called on receiving an unexpected message.</param>
+    public NetFIELDPlatformConnectorWebsocketClient(string endpoint, string authorization, Action<ResponseMessage> pubMessageHandler, Action<string> onErrorHandler, Action<string> onCloseHandler, Action<string> unexpectedMessageHandler)
     {
-        private WebSocket ws;
-        private string endpoint;
-        private string authorization;
-        private string clientId;
+      this.endpoint = new Uri(endpoint);
+      this.authorization = authorization;
+      this.clientId = Guid.NewGuid().ToString(); // generate a unique client id
+      this.client = new WebsocketClient(this.endpoint);
+      this.client.ReconnectTimeout = TimeSpan.FromSeconds(5);
 
-        /// <summary>
-        /// Create a NetfieldProxyWebsocketClient instance.
-        /// </summary>
-        /// <param name="endpoint">WebSocket endpoint, e.g. wss://api.netfield.io/v1</param>
-        /// <param name="authorization">Access token or API key.</param>
-        /// <param name="pubMessageHandler">Handler to be called on receiving an update message on the WebSocket.</param>
-        /// <param name="onErrorHandler">Handler to be called on errors.</param>
-        /// <param name="onCloseHandler">Handler to be called on closing the connection.</param>
-        /// <param name="unexpectedMessageHandler">Handler to be called on receiving an unexpected message.</param>
-        public NetfieldProxyWebsocketClient(string endpoint, string authorization, Action<NesMessage> pubMessageHandler, Action<string> onErrorHandler, Action<string> onCloseHandler, Action<string> unexpectedMessageHandler)
-        {
-            this.endpoint = endpoint;
-            this.authorization = authorization;
-            this.clientId = Guid.NewGuid().ToString(); // generate a unique client id
+      this.client
+     .MessageReceived
+     .Where(msg => msg.Text != null)
+     .ObserveOn(TaskPoolScheduler.Default)
+     .Subscribe(msg =>
+     {
+       try
+       {
+         // deserialize JSON message
+         NesMessage msgObj = JsonConvert.DeserializeObject<NesMessage>(msg.Text);
+         switch (msgObj.type)
+         {
+           case "hello":
+             // got a 'hello' response after successfully authenticating, do nothing
+             Console.WriteLine("hello");
+             break;
+           case "sub":
+             // got a 'sub' response after successfully subscribing to a topic, do nothing
+             // Console.WriteLine("sub");
+             break;
+           case "ping":
+             this._respondToHeartbeatPing();
+             // Console.WriteLine("ping");
+             break;
+           case "pub":
+             pubMessageHandler(msg);
+             // Console.WriteLine("pub");
+             break;
+           default:
+             // Got a message which was neither a 'hello', 'ping', 'sub' or 'pub' message;
+             unexpectedMessageHandler(msg.Text);
+             break;
+         }
+       }
+       catch (Exception e)
+       {
+         Console.WriteLine(e);
+         onErrorHandler(msg.Text);
+       }
+     });
 
-            this.ws = new WebSocket(this.endpoint);
-
-            this.ws.OnError += (sender, e) =>
-            {
-                onErrorHandler(e.Message);
-            };
-
-            this.ws.OnClose += (sender, e) =>
-            {
-                onCloseHandler(e.Reason);
-            };
-
-            this.ws.OnOpen += (sender, e) =>
-            {
-                this._sayHello();
-            };
-
-            this.ws.OnMessage += (sender, e) =>
-            {
-                string msg = e.Data;
-                try
-                {
-                    // deserialize JSON message
-                    NesMessage msgObj = JsonConvert.DeserializeObject<NesMessage>(msg);
-                    switch (msgObj.type)
-                    {
-                        case "hello":
-                            // got a 'hello' response after successfully authenticating, do nothing
-                            break;
-                        case "sub":
-                            // got a 'sub' response after successfully subscribing to a topic, do nothing
-                            break;
-                        case "ping":
-                            this._respondToHeartbeatPing();
-                            break;
-                        case "pub":
-                            pubMessageHandler(msgObj);
-                            break;
-                        default:
-                            // Got a message which was neither a 'hello', 'ping', 'sub' or 'pub' message;
-                            unexpectedMessageHandler(msg);
-                            break;
-                    }
-                }
-                catch
-                {
-                    onErrorHandler(msg);
-                }
-            };
-        }
-
-        /// <summary>
-        /// Send a string message.
-        /// </summary>
-        /// <param name="data">string to send.</param>
-        public void Send(string data)
-        {
-            this.ws.Send(data);
-        }
-
-        /// <summary>
-        /// Send a message by passing in an object which will be serialized before sending.
-        /// </summary>
-        /// <param name="data">data object to send.</param>
-        public void SendObject(object data)
-        {
-            this.Send(JsonConvert.SerializeObject(data));
-        }
-
-        /// <summary>
-        /// Subscribe to netFIELD proxy messages for the given device on the given topic.
-        /// </summary>
-        /// <param name="deviceId">deviceId of the device running netFIELD Proxy.</param>
-        /// <param name="topic">topic to subscribe to. This is the plaintext topic, it will automatically be converted to a base64 string.</param>
-        public void SubscribeToTopic(string deviceId, string topic)
-        {
-            var topicAsBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(topic));
-            var subscribePayload = new
-            {
-                id = this.clientId,
-                path = $"/devices/{deviceId}/netfieldproxy/{topicAsBase64}",
-                type = "sub"
-            };
-            this.SendObject(subscribePayload);
-        }
-
-        /// <summary>
-        /// Connect to the WebSocket and authenticate.
-        /// </summary>
-        public void Connect()
-        {
-            this.ws.Connect();
-        }
-
-        /// <summary>
-        /// Keep the connection to the WebSocket open for the configured time span and close it afterwards.
-        /// </summary>
-        /// <param name="timeSpanToKeepConnectionOpenFor">time span to keep the connection open.</param>
-        public async Task KeepConnectionOpen(TimeSpan timeSpanToKeepConnectionOpenFor)
-        {
-            await Task.Delay(timeSpanToKeepConnectionOpenFor);
-            Close();
-        }
-
-        /// <summary>
-        /// Close the connection to the WebSocket.
-        /// </summary>
-        public void Close()
-        {
-            this.ws.Close();
-        }
-
-        /// <summary>
-        /// Send a 'hello' message according the nes protocol which authenticates this client.
-        /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md#Hello
-        /// </summary>
-        private void _sayHello()
-        {
-            var helloPayload = new
-            {
-                type = "hello",
-                id = this.clientId,
-                version = "2",
-                auth = new
-                {
-                    headers = new
-                    {
-                        authorization = this.authorization,
-                    },
-                },
-            };
-            this.SendObject(helloPayload);
-        }
-
-        /// <summary>
-        /// Send a heartbeat keep-alive ping response according to the nes protocol.
-        /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md#Heartbeat
-        /// </summary>
-        private void _respondToHeartbeatPing()
-        {
-            var pingResponse = new
-            {
-                type = "ping",
-                id = this.clientId,
-            };
-            this.SendObject(pingResponse);
-        }
+      this.client.Start();
+      _sayHello();
     }
 
     /// <summary>
-    /// Represents message received on the WebSocket according to the nes protocol.
-    /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md
+    ///  Stop/close websocket connection
     /// </summary>
-    public class NesMessage
+    internal void Close()
     {
-        [JsonProperty("type")]
-        public string type { get; set; }
-
-        [JsonProperty("message")]
-        public NetfieldProxyUpdateMessage message { get; set; }
+      try
+      {
+        this.client.StopOrFail(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "Closed from Client").Wait();
+      }
+      catch (Exception e)
+      {
+        Console.WriteLine(e.Message);
+      }
     }
 
     /// <summary>
-    /// Represents netFIELD Proxy update message received on the WebSocket.
-    /// 
-    /// Example:
-    /// {
-    ///   "createdAt":1569424627376,
-    ///   "topic":"/fromDeviceToCloud",
-    ///   "data":"payload, cnt 14"
-    /// }
+    /// Send a message by passing in an object which will be serialized before sending.
     /// </summary>
-    public class NetfieldProxyUpdateMessage
+    /// <param name="data">data object to send.</param>
+    public void SendObject(object data)
     {
-        [JsonProperty("createdAt")]
-        public long createdAt { get; set; }
-
-        [JsonProperty("topic")]
-        public string topic { get; set; }
-
-        [JsonProperty("data")]
-        public string data { get; set; }
+      this.client.Send(JsonConvert.SerializeObject(data));
     }
+
+    /// <summary>
+    /// Subscribe to netFIELD Platform connector messages for the given device on the given topic.
+    /// </summary>
+    /// <param name="deviceId">deviceId of the device running netFIELD Platform connector.</param>
+    /// <param name="topic">topic to subscribe to. This is the plaintext topic, it will automatically be converted to a base64 string.</param>
+    public void SubscribeToTopic(string deviceId, string topic)
+    {
+      var topicAsBase64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(topic));
+      var subscribePayload = new
+      {
+        id = this.clientId,
+        path = $"/devices/{deviceId}/platformconnector/{topicAsBase64}",
+        type = "sub"
+      };
+      this.SendObject(subscribePayload);
+    }
+
+
+    /// <summary>
+    /// Send a 'hello' message according the nes protocol which authenticates this client.
+    /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md#Hello
+    /// </summary>
+    private void _sayHello()
+    {
+      var helloPayload = new
+      {
+        type = "hello",
+        id = this.clientId,
+        version = "2",
+        auth = new
+        {
+          headers = new
+          {
+            authorization = this.authorization,
+          },
+        },
+      };
+      this.SendObject(helloPayload);
+    }
+
+    /// <summary>
+    /// Send a heartbeat keep-alive ping response according to the nes protocol.
+    /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md#Heartbeat
+    /// </summary>
+    private void _respondToHeartbeatPing()
+    {
+      var pingResponse = new
+      {
+        type = "ping",
+        id = this.clientId,
+      };
+      this.SendObject(pingResponse);
+    }
+  }
+
+  /// <summary>
+  /// Represents message received on the WebSocket according to the nes protocol.
+  /// https://github.com/hapijs/nes/blob/master/PROTOCOL.md
+  /// </summary>
+  public class NesMessage
+  {
+    [JsonProperty("type")]
+    public string type { get; set; }
+
+    [JsonProperty("message")]
+    public NetfieldPlatfromConnectorUpdateMessage message { get; set; }
+  }
+
+  /// <summary>
+  /// Represents netFIELD Platform connector update message received on the WebSocket.
+  /// 
+  /// Example:
+  /// {
+  ///   "createdAt":1569424627376,
+  ///   "topic":"/fromDeviceToCloud",
+  ///   "data":"payload, cnt 14"
+  /// }
+  /// </summary>
+  public class NetfieldPlatfromConnectorUpdateMessage
+  {
+    [JsonProperty("createdAt", NullValueHandling = NullValueHandling.Ignore)]
+    public DateTime CreatedAt { get; set; }
+
+    [JsonProperty("topic", NullValueHandling = NullValueHandling.Ignore)]
+    public string Topic { get; set; }
+
+    [JsonProperty("chunk", NullValueHandling = NullValueHandling.Ignore)]
+    public string Chunk { get; set; }
+
+    [JsonProperty("data", NullValueHandling = NullValueHandling.Ignore)]
+    public dynamic Data { get; set; }
+  }
 }
 ```
 
