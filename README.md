@@ -411,7 +411,7 @@ class NetFieldProxyWebSocketClient {
     const topicAsBase64 = btoa(topic);
     const subscribePayload = {
       id: this.clientId,
-      path: `/devices/${deviceId}/netfieldproxy/${topicAsBase64}`,
+      path: `/devices/${deviceId}/platformconnector/${topicAsBase64}`,
       type: 'sub',
     };
     this.sendObject(subscribePayload);
