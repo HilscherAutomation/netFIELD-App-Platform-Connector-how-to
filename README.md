@@ -34,9 +34,9 @@ The netFIELD App Platform Connector provides the functionality for you to update
 
 In this section, you will find a detailed description of MQTT message management (sending and receiving), along with various sample codes for different programming languages.
 
-### [Managing MQTT subscriptions](device-container-examples\README.md)
+### [Managing MQTT subscriptions](device-container-examples/README.md)
 
-### [Sending Messages To The Device Broker](api-key-examples\README.md)
+### [Sending Messages To The Device Broker](api-key-examples/README.md)
 
 ## Using The Built In REST API
 Every container of the netFIELD App Platform Connector comes with a REST API. The functionality described above is accessible via this API as well. For ease of use and for documentation purposes a swagger client is provided. Simply point your browser to the port defined in the `Container Create Options` (default is 5001) to access it.
