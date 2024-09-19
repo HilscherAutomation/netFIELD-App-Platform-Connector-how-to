@@ -1,0 +1,19 @@
+@startuml
+skinparam componentStyle rectangle
+component Cloud {
+  component "netFIELD Data Service Broker" as NDS
+}
+component "On-Premises Device" as Device {
+  component "Customer Container" as CContainer
+  component "Platform Connector" as PC
+}
+component "Customer App" as App
+
+CContainer -> PC : publish on topic: app/topic
+CContainer -> PC : publish on topic: todevice/app/topic
+PC -right-> NDS : publish on topic: basePath/app/topic
+PC -right-> NDS : publish on topic: todevice/basePath/app/topic
+App -right-> NDS : subscribe to topic: basePath/app/topic
+App -right-> NDS : subscribe to topic: todevice/basePath/app/topic
+
+@enduml

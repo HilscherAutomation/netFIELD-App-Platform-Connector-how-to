@@ -1,0 +1,79 @@
+<mxfile host="65bd71144e">
+    <diagram name="Page-1" id="W11v3CG9ObhkWb_wC2Nm">
+        <mxGraphModel dx="1464" dy="898" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-78" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="100" y="210" width="690" height="570" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-36" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="314" y="360" width="200" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-55" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="314" y="360" width="46" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-33" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="180" y="530" width="500" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-54" value="" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+                    <mxGeometry x="180" y="530" width="120" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-34" value="subscribe on topic: app/topic2" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="466" y="635" width="200" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-35" value="Customer App" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#36393d;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="339" y="250" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-37" value="Cloud" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="278" y="359" width="120" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-38" value="netFIELD Data Service Broker" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#36393d;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="339" y="390" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-39" value="On-Premise Device" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+                    <mxGeometry x="180" y="530" width="120" height="20" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" parent="1" source="z1qGPT72Hmq-PBFi2E9u-41" target="z1qGPT72Hmq-PBFi2E9u-44" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-41" value="Customer Container" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#36393d;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="339" y="670" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-42" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" parent="1" source="z1qGPT72Hmq-PBFi2E9u-44" target="z1qGPT72Hmq-PBFi2E9u-38" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-43" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=0;exitDx=0;exitDy=0;entryX=0.75;entryY=1;entryDx=0;entryDy=0;" parent="1" source="z1qGPT72Hmq-PBFi2E9u-44" target="z1qGPT72Hmq-PBFi2E9u-38" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-44" value="Platform Connector" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#36393d;fontSize=10;" parent="1" vertex="1">
+                    <mxGeometry x="339" y="580" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-45" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=0;exitDx=0;exitDy=0;entryX=0.25;entryY=1;entryDx=0;entryDy=0;" parent="1" source="z1qGPT72Hmq-PBFi2E9u-41" target="z1qGPT72Hmq-PBFi2E9u-44" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-46" value="publish on topic: app/topic" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="213" y="635" width="170" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-47" value="publish on topic: baseTopic/app/topic" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="153" y="480" width="230" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-48" value="subscribe on topic: toDevice/baseTopic/app/topic2" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="441" y="480" width="310" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-49" value="subscribe on topic: baseTopic/app/topic" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="133" y="310" width="250" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;" parent="1" source="z1qGPT72Hmq-PBFi2E9u-35" target="z1qGPT72Hmq-PBFi2E9u-38" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-51" value="publish on topic: todevice/baseTopic/topic2" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="441" y="310" width="270" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="z1qGPT72Hmq-PBFi2E9u-52" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" parent="1" source="z1qGPT72Hmq-PBFi2E9u-35" target="z1qGPT72Hmq-PBFi2E9u-38" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

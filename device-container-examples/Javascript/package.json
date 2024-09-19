@@ -1,0 +1,11 @@
+{
+  "name": "device-container-examples",
+  "version": "3.4.0",
+  "main": "NetfieldDataService.js",
+  "author": "Hilscher Gesellschaft fuer Systemautomation mbH",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "mqtt": "^5.0.5"
+  }
+}

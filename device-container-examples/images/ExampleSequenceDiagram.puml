@@ -1,0 +1,16 @@
+@startuml
+participant "Custom App" as APP
+participant "netFIELD Data Service" as NDS
+
+APP -> NDS: connect to MQTT endpoint with credentials
+note right : using MQTT WSS or MQTTS
+activate NDS
+
+APP -> APP: select topic to publish to
+APP --> NDS: publish a message to the calculated topic
+NDS --> APP: receive publish acknowledgement
+
+APP -> APP: calculate topic to subscribe to \nusing /todevice prefix
+APP --> NDS: subscribe to the calculated topic
+NDS --> APP: start receiving published messages
+@enduml

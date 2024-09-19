@@ -1,0 +1,32 @@
+@startuml
+participant "Custom App" as APP
+participant "netFIELD API" as API
+participant "netFIELD Data Service" as NDS
+
+APP -> API: request /keys/dataservice/info with Api Key
+activate API
+API -> APP: returns credentials info
+deactivate API
+
+APP -> API: request /keys/dataservice/devices with Api Key
+activate API
+API -> APP: returns devices info
+deactivate API
+
+APP -> APP: extract device MQTT endpoint
+note left: MQTT over Websocket (MQTT WSS) \nor MQTTS endpoint is used depending \non which protocol is specified
+
+APP -> NDS: connect to MQTT endpoint with credentials
+note right : using MQTT WSS or MQTTS
+activate NDS
+
+APP -> APP: calculate topic to publish to \nusing /todevice prefix
+note left : info for device topics is provided in \n/keys/dataservice/devices response
+APP --> NDS: publish a message to the calculated topic
+NDS --> APP: receive publish acknowledgement
+
+APP -> APP: calculate topic to subscribe to
+note left : info for device topics is provided in \n/keys/dataservice/devices response
+APP --> NDS: subscribe to the calculated topic
+NDS --> APP: start receiving published messages
+@enduml
